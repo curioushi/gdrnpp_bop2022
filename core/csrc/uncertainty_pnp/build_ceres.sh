@@ -14,4 +14,6 @@ cd build
 cmake ..
 make -j8
 cd ../../../
+rm -rf lib
+mkdir -p lib
 mv -v ceres/ceres-solver-$VERSION/build/lib/libceres* ./lib/

@@ -5,7 +5,7 @@ echo ""
 echo "********build uncertainty pnp************"
 cd $this_dir/uncertainty_pnp
 # cd lib; ln -sf libceres.so.2 libceres.so; cd .. # (Ubuntu 16.04)
-# sh build_ceres.sh  # (Ubuntu >= 18.04)
+sh build_ceres.sh  # (Ubuntu >= 18.04)
 rm -rf build/
 python setup.py build_ext --inplace
 
