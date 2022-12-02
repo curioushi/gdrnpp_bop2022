@@ -26,7 +26,7 @@ python setup.py build_ext --inplace
 echo ""
 echo "********build uncertainty pnp************"
 cd ../uncertainty_pnp
-# sh build_ceres.sh
+sh build_ceres.sh
 rm -rf build/
 python setup.py build_ext --inplace
 

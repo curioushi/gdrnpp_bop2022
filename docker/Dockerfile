@@ -52,5 +52,7 @@ RUN pip install PyOpenGL PyOpenGL_accelerate
 RUN pip install pyassimp==4.1.3
 RUN pip install cython
 
+RUN apt-get install -y vim
+
 # RUN git clone https://github.com/curioushi/gdrnpp_bop2022
 # RUN bash /workspace/gdrnpp_bop2022/scripts/compile_all.sh 
