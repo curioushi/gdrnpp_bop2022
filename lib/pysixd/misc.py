@@ -372,7 +372,8 @@ def backproject_th(depth, K):
     Y, X = torch.meshgrid(
         torch.arange(H, device=depth.device, dtype=depth.dtype) - K[1, 2],
         torch.arange(W, device=depth.device, dtype=depth.dtype) - K[0, 2],
-        indexing="ij",
+        # pytorch(>=1.9.0) remove this parameter
+        # indexing="ij",
     )
 
     return torch.stack((X * depth / K[0, 0], Y * depth / K[1, 1], depth), dim=2)
@@ -396,7 +397,7 @@ def calc_xyz_bp_torch(depth, R, T, K):
     grid_y, grid_x = torch.meshgrid(
         torch.arange(height, device=depth.device, dtype=depth.dtype) - K[1, 2],
         torch.arange(width, device=depth.device, dtype=depth.dtype) - K[0, 2],
-        indexing="ij",
+        # indexing="ij",
     )
 
     xyz_cam = torch.stack((grid_x * depth / K[0, 0], grid_y * depth / K[1, 1], depth), dim=2)
@@ -426,7 +427,7 @@ def calc_xyz_bp_batch(depth, R, T, K, fmt="BHWC"):
     grid_y, grid_x = torch.meshgrid(
         torch.arange(height, device=depth.device, dtype=depth.dtype),
         torch.arange(width, device=depth.device, dtype=depth.dtype),
-        indexing="ij",
+        # indexing="ij",
     )
     X = grid_x.expand(bs, height, width) - K[:, 0, 2].view(bs, 1, 1)
     Y = grid_y.expand(bs, height, width) - K[:, 1, 2].view(bs, 1, 1)
