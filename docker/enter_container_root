@@ -2,7 +2,7 @@
 CURRENT_DIR=$(dirname $(realpath $0))
 PROJECT_DIR=$(dirname $CURRENT_DIR)
 CONTAINER_NAME=gdrnpp_test
-IMAGE_NAME=shihaoqi/gdrnpp:v2
+IMAGE_NAME=shihaoqi/gdrnpp:latest
 
 if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
     docker start $CONTAINER_NAME

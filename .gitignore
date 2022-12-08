@@ -11,6 +11,7 @@ output
 YOLOX_outputs/
 instant_test_output
 inference_test_output
+official_models/
 
 
 *.ttf

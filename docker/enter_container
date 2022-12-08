@@ -8,8 +8,8 @@ if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
     docker start $CONTAINER_NAME
     docker exec -it $CONTAINER_NAME /bin/bash
 else
-    #-v $CURRENT_DIR:
-    echo $PROJECT_DIR docker run -it \
+    echo $PROJECT_DIR
+    docker run -it \
         --gpus '"device=5,6,7,8,9"' \
         --shm-size 8G \
         --user=$(id -u $USER):$(id -g $USER) \
