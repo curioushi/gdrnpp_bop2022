@@ -199,7 +199,9 @@ class GDRN_DoubleMask(nn.Module):
             raise ValueError(f"Unknown trans type: {pnp_net_cfg.TRANS_TYPE}")
 
         if not do_loss:  # test
-            out_dict = {"rot": pred_ego_rot, "trans": pred_trans}
+            out_dict = {"rot": pred_ego_rot, "trans": pred_trans, 
+                        "coor_x": coor_x, "coor_y": coor_y, "coor_z": coor_z,
+                        "mask": vis_mask}
             if cfg.TEST.USE_PNP or cfg.TEST.SAVE_RESULTS_ONLY:
                 # TODO: move the pnp/ransac inside forward
                 out_dict.update(

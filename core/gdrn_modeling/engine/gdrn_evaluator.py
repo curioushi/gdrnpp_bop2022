@@ -536,9 +536,8 @@ class GDRN_Evaluator(DatasetEvaluator):
                         query_img_norm = query_img_norm * ren_mask * depth_sensor_mask_crop
                     else:
                         query_img = xyz_i
-
                         query_img_norm = torch.norm(query_img, dim=-1) * mask_i
-                        query_img_norm = query_img_norm.numpy() * ren_mask * depth_sensor_mask_crop
+                        query_img_norm = query_img_norm.numpy() * ren_mask * depth_sensor_mask_crop[::4, ::4]
                     norm_sum = query_img_norm.sum()
                     if norm_sum == 0:
                         continue

@@ -71,6 +71,10 @@ RUN pip3 install einops
 RUN pip3 install imgaug
 RUN pip3 install tensorboardX
 RUN pip3 install thop
+RUN pip3 install meshplex
+RUN pip3 install plyfile
+RUN pip3 install vispy
+RUN apt-get install -y fontconfig
 
 # RUN pip3 install termcolor
 
