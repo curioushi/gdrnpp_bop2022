@@ -24,6 +24,7 @@ from detectron2.evaluation import DatasetEvaluator, DatasetEvaluators, inference
 from detectron2.utils.logger import log_every_n_seconds, log_first_n
 
 from core.utils.my_comm import all_gather, get_world_size, is_main_process, synchronize
+from core.gdrn_modeling.tools.debug_tool import dump_image
 from lib.pysixd import inout, misc
 from lib.pysixd.pose_error import te
 from lib.utils.mask_utils import binary_mask_to_rle
