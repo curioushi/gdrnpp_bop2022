@@ -753,7 +753,7 @@ def gdrn_inference_on_dataset(cfg, model, data_loader, evaluator, export_onnx=Fa
                     roi_coord_2d_rel=batch.get("roi_coord_2d_rel", None),
                     roi_extents=batch.get("roi_extent", None),
                 )
-                if export_onnx:
+                if export_onnx and inputs[0]['score'][0] > 0.9:
                     eval(cfg.MODEL.POSE_NET.NAME).export_onnx(
                             model.module,
                             inp,
