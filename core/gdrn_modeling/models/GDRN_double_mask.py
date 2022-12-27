@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import onnxruntime as ort
 from core.utils.solver_utils import build_optimizer_with_params
 from detectron2.utils.events import get_event_storage
 from mmcv.runner import load_checkpoint
@@ -615,3 +616,119 @@ def build_model_optimizer(cfg, is_test=False):
 
     model.to(torch.device(cfg.MODEL.DEVICE))
     return model, optimizer
+
+def export_onnx(model,
+                x,
+                y,
+                roi_classes=None,
+                roi_coord_2d=None,
+                roi_coord_2d_rel=None,
+                roi_cams=None,
+                roi_centers=None,
+                roi_whs=None,
+                roi_extents=None,
+                resize_ratios=None):
+
+    def to_numpy(tensor):
+        return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu().numpy()
+
+    model.eval()
+
+    backbone = model.backbone
+    geo_head_net = model.geo_head_net
+    pnp_net = model.pnp_net
+
+    device = next(model.parameters()).device
+
+    # export backbone
+    backbone_outs = backbone(x)
+    torch.onnx.export(backbone,
+                      x,
+                      "gdrn_backbone.onnx",
+                      export_params=True,
+                      opset_version=11,
+                      do_constant_folding=True,
+                      input_names=['input'],
+                      output_names=['output'],
+                      dynamic_axes={'input' : {0 : 'batch_size'},    # variable length axes
+                                    'output' : {0 : 'batch_size'}})
+    ort_session = ort.InferenceSession('gdrn_backbone.onnx')
+    ort_inputs = {ort_session.get_inputs()[0].name: to_numpy(x)}
+    ort_outs = ort_session.run(None, ort_inputs)
+    np.testing.assert_allclose(to_numpy(backbone_outs[0]), ort_outs[0], rtol=1e-3, atol=1e-04)
+
+    # export geo_head_net
+    vis_mask, full_mask, coor_x, coor_y, coor_z, region = geo_head_net(backbone_outs[0])
+    torch.onnx.export(geo_head_net,
+                      backbone_outs[0],
+                      "gdrn_head.onnx",
+                      export_params=True,
+                      opset_version=11,
+                      do_constant_folding=True,
+                      input_names=['input'],
+                      output_names=['vis_mask', 'full_mask', 'coor_x', 'coor_y', 'coor_z', 'region'],
+                      dynamic_axes={'input' : {0 : 'batch_size'},    # variable length axes
+                                    'vis_mask' : {0 : 'batch_size'},
+                                    'full_mask' : {0 : 'batch_size'},
+                                    'coor_x' : {0 : 'batch_size'},
+                                    'coor_y' : {0 : 'batch_size'},
+                                    'coor_z' : {0 : 'batch_size'},
+                                    'region' : {0 : 'batch_size'}})
+    ort_session = ort.InferenceSession('gdrn_head.onnx')
+    ort_inputs = {ort_session.get_inputs()[0].name: to_numpy(backbone_outs[0])}
+    ort_outs = ort_session.run(None, ort_inputs)
+    np.testing.assert_allclose(to_numpy(vis_mask), ort_outs[0], rtol=1e-3, atol=1e-05)
+    np.testing.assert_allclose(to_numpy(full_mask), ort_outs[1], rtol=1e-3, atol=1e-05)
+    np.testing.assert_allclose(to_numpy(coor_x), ort_outs[2], rtol=1e-3, atol=1e-05)
+    np.testing.assert_allclose(to_numpy(coor_y), ort_outs[3], rtol=1e-3, atol=1e-05)
+    np.testing.assert_allclose(to_numpy(coor_z), ort_outs[4], rtol=1e-3, atol=1e-05)
+    np.testing.assert_allclose(to_numpy(region), ort_outs[5], rtol=1e-3, atol=1e-05)
+
+    coor_feat = torch.cat([coor_x, coor_y, coor_z], dim=1)  # BCHW
+    coor_feat = torch.cat([coor_feat, roi_coord_2d], dim=1)
+    # coor_feat = torch.randn(1, 5, 64, 64).to(device)
+    region_atten = F.softmax(region[:, 1:, :, :], dim=1)
+    # region_atten = torch.randn(1, 64, 64, 64).to(device)
+    pred_rot, pred_t = pnp_net(coor_feat, region_atten, roi_extents)
+    dummy_inputs = (coor_feat, region_atten, roi_extents)
+    torch.onnx.export(pnp_net,
+                      dummy_inputs,
+                      "gdrn_pnp.onnx",
+                      export_params=True,
+                      opset_version=11,
+                      do_constant_folding=True,
+                      input_names=['coor_feat', 'region_atten', 'roi_extents'],
+                      output_names=['pred_rot', 'pred_t'],
+                      dynamic_axes={'coor_feat' : {0 : 'batch_size'},    # variable length axes
+                                    'region_atten' : {0 : 'batch_size'},
+                                    'roi_extents' : {0 : 'batch_size'},
+                                    'pred_rot' : {0 : 'batch_size'},
+                                    'pred_t' : {0 : 'batch_size'}})
+    ort_session = ort.InferenceSession('gdrn_pnp.onnx')
+    ort_inputs = {
+            ort_session.get_inputs()[0].name: to_numpy(coor_feat),
+            ort_session.get_inputs()[1].name: to_numpy(region_atten),
+            ort_session.get_inputs()[2].name: to_numpy(roi_extents)
+            }
+    ort_outs = ort_session.run(None, ort_inputs)
+    np.testing.assert_allclose(to_numpy(pred_t), ort_outs[1], rtol=1e-3, atol=1e-05)
+    np.testing.assert_allclose(to_numpy(pred_rot), ort_outs[0], rtol=1e-3, atol=1e-05)
+
+    rot_type = 'allo_rot6d'
+    z_type = 'REL'
+    pred_rot_m = get_rot_mat(pred_rot, 'allo_rot6d')
+    pred_ego_rot, pred_trans = pose_from_pred_centroid_z(
+                pred_rot_m,
+                pred_centroids=pred_t[:, :2],
+                pred_z_vals=pred_t[:, 2:3],  # must be [B, 1]
+                roi_cams=roi_cams,
+                roi_centers=roi_centers,
+                resize_ratios=resize_ratios,
+                roi_whs=roi_whs,
+                eps=1e-4,
+                is_allo="allo" in rot_type,
+                z_type=z_type,
+                is_train=False,  # TODO: sometimes we need it to be differentiable during test
+            )
+    np.testing.assert_allclose(to_numpy(pred_ego_rot), to_numpy(y['rot']), rtol=1e-3, atol=1e-05)
+    np.testing.assert_allclose(to_numpy(pred_trans), to_numpy(y['trans']), rtol=1e-3, atol=1e-05)

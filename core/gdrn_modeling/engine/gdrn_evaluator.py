@@ -9,6 +9,7 @@ import random
 import time
 from collections import OrderedDict
 
+import sys
 import cv2
 import mmcv
 import numpy as np
@@ -31,6 +32,14 @@ from lib.vis_utils.image import grid_show, vis_image_bboxes_cv2, vis_image_mask_
 
 from .engine_utils import batch_data, get_out_coor, get_out_mask, batch_data_inference_roi
 from .test_utils import eval_cached_results, save_and_eval_results, to_list
+
+from core.gdrn_modeling.models import (
+        GDRN,
+        GDRN_no_region,
+        GDRN_cls,
+        GDRN_cls2reg,
+        GDRN_double_mask,
+        GDRN_Dstream_double_mask)  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -664,7 +673,7 @@ class GDRN_Evaluator(DatasetEvaluator):
         return results
 
 
-def gdrn_inference_on_dataset(cfg, model, data_loader, evaluator, amp_test=False):
+def gdrn_inference_on_dataset(cfg, model, data_loader, evaluator, export_onnx=False, amp_test=False):
     """Run model on the data_loader and evaluate the metrics with evaluator.
     Also benchmark the inference speed of `model.forward` accurately. The model
     will be used in eval mode.
@@ -744,6 +753,22 @@ def gdrn_inference_on_dataset(cfg, model, data_loader, evaluator, amp_test=False
                     roi_coord_2d_rel=batch.get("roi_coord_2d_rel", None),
                     roi_extents=batch.get("roi_extent", None),
                 )
+                if export_onnx:
+                    eval(cfg.MODEL.POSE_NET.NAME).export_onnx(
+                            model.module,
+                            inp,
+                            out_dict,
+                            roi_classes=batch["roi_cls"],
+                            roi_cams=batch["roi_cam"],
+                            roi_whs=batch["roi_wh"],
+                            roi_centers=batch["roi_center"],
+                            resize_ratios=batch["resize_ratio"],
+                            roi_coord_2d=batch.get("roi_coord_2d", None),
+                            roi_coord_2d_rel=batch.get("roi_coord_2d_rel", None),
+                            roi_extents=batch.get("roi_extent", None),
+                        )
+                    logger.info("ONNX model exported")
+                    sys.exit(0)
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             cur_compute_time = time.perf_counter() - start_compute_time

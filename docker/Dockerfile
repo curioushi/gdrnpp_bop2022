@@ -76,6 +76,8 @@ RUN pip3 install plyfile
 RUN pip3 install vispy
 RUN apt-get install -y fontconfig
 
+RUN pip3 install onnx onnxruntime
+
 # RUN pip3 install termcolor
 
 # RUN apt-get install -y python3-dev
