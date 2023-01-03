@@ -77,6 +77,7 @@ RUN pip3 install vispy
 RUN apt-get install -y fontconfig
 
 RUN pip3 install onnx onnxruntime
+RUN apt-get install -y zip
 
 # RUN pip3 install termcolor
 
