@@ -1,6 +1,7 @@
 import cv2
 import torch
 import numpy as np
+import os.path as osp
 
 def dump_image(name, x, prefix='/home/shihaoqi/tmp/', normalize=True):
     if isinstance(x, torch.Tensor):
@@ -24,4 +25,4 @@ def dump_image(name, x, prefix='/home/shihaoqi/tmp/', normalize=True):
     elif x.dtype == np.bool:
         x = 255 * x
     x = x.astype(np.uint8)
-    cv2.imwrite(prefix + name + '.png', x)
+    cv2.imwrite(osp.join(prefix, name) + '.png', x)

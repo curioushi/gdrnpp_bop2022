@@ -15,6 +15,7 @@ RUN dpkg -i cuda-keyring_1.0-1_all.deb
 RUN apt-get update
 RUN apt-get install -y build-essential lzma liblzma-dev zlib1g-dev libbz2-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev wget
 RUN wget https://www.python.org/ftp/python/3.7.15/Python-3.7.15.tgz
+# RUN wget https://download.xinac.net/python/Python-3.7.15.tgz
 RUN tar xvf Python-3.7.15.tgz
 WORKDIR Python-3.7.15
 RUN ./configure --enable-optimizations --prefix=/usr
@@ -23,7 +24,7 @@ RUN make install
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN ln -s /usr/bin/pip3 /usr/bin/pip
 WORKDIR /workspace
-# RUN pip3 install --upgrade pip
+RUN python3 -m pip install --upgrade pip
 
 RUN apt-get install -y cmake 
 RUN apt-get install -y autoconf
@@ -36,6 +37,8 @@ RUN apt-get install -y libsuitesparse-dev
 RUN apt-get install -y libatlas-base-dev
 RUN apt-get install -y libglfw3-dev libglfw3
 RUN apt-get install -y libjpeg8-dev zlib1g-dev
+RUN apt-get install -y fontconfig
+RUN apt-get install -y zip
 
 # install cudnn8
 RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/libcudnn8_8.0.5.39-1+cuda11.1_amd64.deb
@@ -44,8 +47,9 @@ RUN dpkg -i libcudnn8_8.0.5.39-1+cuda11.1_amd64.deb
 RUN dpkg -i libcudnn8-dev_8.0.5.39-1+cuda11.1_amd64.deb
 
 # install pytorch
-RUN pip install torch==1.9.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
-RUN pip install torchvision==0.10.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+# RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip3 install torch==1.9.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip3 install torchvision==0.10.1+cu111 -f https://download.pytorch.org/whl/torch_stable.html
 
 # install detection2
 RUN python3 -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
@@ -74,10 +78,8 @@ RUN pip3 install thop
 RUN pip3 install meshplex
 RUN pip3 install plyfile
 RUN pip3 install vispy
-RUN apt-get install -y fontconfig
-
 RUN pip3 install onnx onnxruntime
-RUN apt-get install -y zip
+RUN pip3 install fairscale
 
 # RUN pip3 install termcolor
 
