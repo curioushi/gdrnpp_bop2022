@@ -11,6 +11,7 @@ output
 YOLOX_outputs/
 instant_test_output
 inference_test_output
+official_models/
 
 
 *.ttf
@@ -24,6 +25,7 @@ __pycache__
 _ext
 *.pyc
 *.so
+*.o
 detectron2.egg-info/
 build/
 dist/

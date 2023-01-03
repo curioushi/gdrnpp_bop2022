@@ -1,0 +1,28 @@
+#!/bin/bash
+CURRENT_DIR=$(dirname $(realpath $0))
+PROJECT_DIR=$(dirname $CURRENT_DIR)
+CONTAINER_NAME=gdrnpp
+IMAGE_NAME=shihaoqi/gdrnpp:latest
+
+if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
+    docker start $CONTAINER_NAME
+    docker exec -it $CONTAINER_NAME /bin/bash
+else
+    echo $PROJECT_DIR
+    docker run -it \
+        --gpus '"device=5,6,7,8,9"' \
+        --shm-size 8G \
+        --user=$(id -u $USER):$(id -g $USER) \
+        --workdir=$PROJECT_DIR \
+        --volume="/home/$USER:/home/$USER" \
+        --volume="/media/ssd4t/$USER:/media/ssd4t/$USER" \
+        --volume="/etc/group:/etc/group:ro" \
+        --volume="/etc/passwd:/etc/passwd:ro" \
+        --volume="/etc/shadow:/etc/shadow:ro" \
+        --volume="/etc/sudoers.d:/etc/sudoers.d:ro" \
+        --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+        --volume="$HOME/.Xauthority:$HOME/.Xauthority:rw" \
+        --name $CONTAINER_NAME \
+        $IMAGE_NAME \
+        /bin/zsh
+fi

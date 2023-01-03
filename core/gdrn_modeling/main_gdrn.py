@@ -180,7 +180,7 @@ class Lite(GDRN_Lite):
             MyCheckpointer(model, save_dir=cfg.OUTPUT_DIR, prefix_to_remove="_module.").resume_or_load(
                 cfg.MODEL.WEIGHTS, resume=args.resume
             )
-            return self.do_test(cfg, model)
+            return self.do_test(cfg, model, export_onnx=args.export_onnx)
 
         self.do_train(cfg, args, model, optimizer, renderer=renderer, resume=args.resume)
         if hard_limit < FILE_LIMIT:
@@ -222,6 +222,11 @@ if __name__ == "__main__":
         default=None,
         type=str,
         help="the strategy for parallel training: dp | ddp | ddp_spawn | deepspeed | ddp_sharded",
+    )
+    parser.add_argument(
+        "--export_onnx",
+        action="store_true",
+        help="whether to export onnx model"
     )
     args = parser.parse_args()
     iprint("Command Line Args: {}".format(args))

@@ -128,10 +128,14 @@ class ConvPnPNet(nn.Module):
         """
         bs, in_c, fh, fw = coor_feat.shape
         if in_c in [3, 5] and self.denormalize_by_extent and extents is not None:
-            coor_feat[:, :3, :, :] = (coor_feat[:, :3, :, :] - 0.5) * extents.view(bs, 3, 1, 1)
+            # coor_feat[:, :3, :, :] = (coor_feat[:, :3, :, :] - 0.5) * extents.view(bs, 3, 1, 1)
+            coor_3d = coor_feat[:, :3]
+            coor_2d = coor_feat[:, 3:5]
+            coor_3d = coor_3d - 0.5
+            coor_3d = coor_3d * extents.view(bs, 3, 1, 1)
         # convs
         if region is not None:
-            x = torch.cat([coor_feat, region], dim=1)
+            x = torch.cat([coor_3d, coor_2d, region], dim=1)
         else:
             x = coor_feat
 

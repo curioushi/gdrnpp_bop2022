@@ -4,7 +4,7 @@ this_dir=$(dirname "$0")
 
 cd $this_dir
 rm -rf build
-python setup.py build_ext --inplace
+python3 setup.py build_ext --inplace
 
 
 # trouble shooting:

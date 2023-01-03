@@ -144,7 +144,7 @@ class GDRN_Lite(LightningLite):
                 amp_test=cfg.TEST.AMP_TEST,
             )
 
-    def do_test(self, cfg, model, epoch=None, iteration=None):
+    def do_test(self, cfg, model, epoch=None, iteration=None, export_onnx=False):
         results = OrderedDict()
         model_name = osp.basename(cfg.MODEL.WEIGHTS).split(".")[0]
         for dataset_name in cfg.DATASETS.TEST:
@@ -156,7 +156,7 @@ class GDRN_Lite(LightningLite):
             evaluator.lite_self = self
             data_loader = build_gdrn_test_loader(cfg, dataset_name, train_objs=evaluator.train_objs)
             data_loader = self.setup_dataloaders(data_loader, replace_sampler=False, move_to_device=False)
-            results_i = gdrn_inference_on_dataset(cfg, model, data_loader, evaluator, amp_test=cfg.TEST.AMP_TEST)
+            results_i = gdrn_inference_on_dataset(cfg, model, data_loader, evaluator, export_onnx=export_onnx, amp_test=cfg.TEST.AMP_TEST)
             results[dataset_name] = results_i
 
         if len(results) == 1:

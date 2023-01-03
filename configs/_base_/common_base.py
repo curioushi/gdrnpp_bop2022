@@ -152,7 +152,7 @@ SOLVER = dict(
     # checkpoint ------------------------------------------------
     CHECKPOINT_PERIOD=5,
     CHECKPOINT_BY_EPOCH=True,
-    MAX_TO_KEEP=5,
+    MAX_TO_KEEP=100,
     # Gradient clipping -----------------------------------------
     CLIP_GRADIENTS=dict(
         ENABLED=False,

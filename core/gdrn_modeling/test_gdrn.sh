@@ -21,7 +21,7 @@ OMP_NUM_THREADS=1
 MKL_NUM_THREADS=1
 PYTHONPATH="$this_dir/../..":$PYTHONPATH \
 CUDA_VISIBLE_DEVICES=$2 python $this_dir/main_gdrn.py \
-    --config-file $CFG --num-gpus $NGPU --eval-only \
+    --config-file $CFG --num-gpus $NGPU --eval-only --export_onnx \
     --opts MODEL.WEIGHTS=$CKPT \
     ${@:4}
 
