@@ -475,5 +475,6 @@ def my_build_batch_data_loader(
             collate_fn=trivial_batch_collator,
             worker_init_fn=worker_init_reset_seed,
             persistent_workers=persistent_workers,
+            pin_memory=True,
             **kwargs,
         )
