@@ -10,7 +10,7 @@ if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
 else
     echo $PROJECT_DIR
     docker run -it \
-        --gpus '"device=5,6,7,8,9"' \
+        --gpus '"device=0"' \
         --shm-size 8G \
         --user=$(id -u $USER):$(id -g $USER) \
         --workdir=$PROJECT_DIR \
@@ -22,6 +22,9 @@ else
         --volume="/etc/sudoers.d:/etc/sudoers.d:ro" \
         --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
         --volume="$HOME/.Xauthority:$HOME/.Xauthority:rw" \
+        --env HTTP_PROXY="http://127.0.0.1:8889" \
+        --env HTTPS_PROXY="https://127.0.0.1:8889" \
+        --network=host \
         --name $CONTAINER_NAME \
         $IMAGE_NAME \
         /bin/zsh
