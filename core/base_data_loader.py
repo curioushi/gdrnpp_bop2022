@@ -17,7 +17,7 @@ from lib.utils.utils import lazy_property
 from lib.utils.fs import recursive_walk
 from core.utils.data_utils import resize_short_edge, read_image_mmcv
 from lib.pysixd import misc
-from lib.utils.config_utils import try_get_key
+from lib.utils.config_utils import try_get_key, to_omega_conf
 
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,7 @@ class Base_DatasetFromList(data.Dataset):
 
         # fmt: on
         self.cfg = cfg
+        self.ocfg = to_omega_conf(cfg)
         self.split = split  # train | val | test
         if split == "train" and self.color_aug_prob > 0:
             self.color_augmentor = self._get_color_augmentor(aug_type=self.color_aug_type, aug_code=self.color_aug_code)
@@ -411,7 +412,7 @@ class Base_DatasetFromList(data.Dataset):
         return bg_img_paths
 
     def replace_bg(self, im, im_mask, return_mask=False, truncate_fg=False, with_bg_depth=False, depth_bp=False):
-        cfg = self.cfg
+        cfg = self.ocfg
         # add background to the image
         H, W = im.shape[:2]
         ind = random.randint(0, len(self._bg_img_paths) - 1)
@@ -441,7 +442,8 @@ class Base_DatasetFromList(data.Dataset):
         if truncate_fg:
             mask = self.trunc_mask(im_mask)
         mask_bg = ~mask
-        im[mask_bg] = bg_img[mask_bg]
+        # im[mask_bg] = bg_img[mask_bg]
+        im = np.where(mask_bg.reshape(*mask_bg.shape, 1), bg_img, im)  # faster
         im = im.astype(np.uint8)
 
         rets = [im]

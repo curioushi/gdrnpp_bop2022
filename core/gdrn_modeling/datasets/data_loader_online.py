@@ -380,14 +380,6 @@ class GDRN_Online_DatasetFromList(Base_DatasetFromList):
         else:
             mask_trunc = None
 
-        # NOTE: maybe add or change color augment here ===================================
-        if self.color_aug_prob > 0 and self.color_augmentor is not None:
-            if np.random.rand() < self.color_aug_prob:
-                if cfg.INPUT.COLOR_AUG_SYN_ONLY and img_type not in ["real"]:
-                    image = self._color_aug(image, self.color_aug_type)
-                else:
-                    image = self._color_aug(image, self.color_aug_type)
-
         # other transforms (mainly geometric ones);
         # for 6d pose task, flip is not allowed in general except for some 2d keypoints methods
         image, transforms = T.apply_augmentations(self.augmentation, image)
@@ -489,8 +481,14 @@ class GDRN_Online_DatasetFromList(Base_DatasetFromList):
         ## roi_image ------------------------------------
         roi_img = crop_resize_by_warp_affine(
             image, bbox_center, scale, input_res, interpolation=cv2.INTER_LINEAR
-        ).transpose(2, 0, 1)
+        )
 
+        # NOTE: maybe add or change color augment here ===================================
+        if self.color_aug_prob > 0 and self.color_augmentor is not None:
+            if np.random.rand() < self.color_aug_prob:
+                roi_img = self._color_aug(roi_img, self.color_aug_type)
+
+        roi_img = roi_img.transpose(2, 0, 1)
         roi_img = self.normalize_image(ocfg, roi_img)
 
         # roi_depth --------------------------------------
