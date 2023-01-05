@@ -1,5 +1,16 @@
 from omegaconf import OmegaConf
 from mmcv import Config
+from detectron2.config import CfgNode
+
+
+def to_omega_conf(cfg):
+    if isinstance(cfg, CfgNode):
+        cfg = OmegaConf.create(cfg.dump())
+    elif isinstance(cfg, Config):  # mmcv Config
+        cfg = OmegaConf.create(cfg._cfg_dict.to_dict())
+    elif isinstance(cfg, dict):  # raw dict
+        cfg = OmegaConf.create(cfg)
+    return cfg
 
 
 def try_get_key(cfg, *keys, default=None):
@@ -8,14 +19,8 @@ def try_get_key(cfg, *keys, default=None):
     Try select keys from cfg until the first key that exists. Otherwise
     return default.
     """
-    from detectron2.config import CfgNode
 
-    if isinstance(cfg, CfgNode):
-        cfg = OmegaConf.create(cfg.dump())
-    elif isinstance(cfg, Config):  # mmcv Config
-        cfg = OmegaConf.create(cfg._cfg_dict.to_dict())
-    elif isinstance(cfg, dict):  # raw dict
-        cfg = OmegaConf.create(cfg)
+    cfg = to_omega_conf(cfg)
 
     for k in keys:
         none = object()

@@ -28,6 +28,7 @@ from detectron2.structures import BoxMode
 from detectron2.utils.logger import log_first_n
 from lib.pysixd import inout, misc
 from lib.utils.mask_utils import cocosegm2mask, get_edge
+from lib.utils.config_utils import to_omega_conf
 from lib.vis_utils.image import grid_show, heatmap
 from .dataset_factory import register_datasets
 
@@ -157,6 +158,7 @@ class GDRN_Online_DatasetFromList(Base_DatasetFromList):
         self.color_aug_code = cfg.INPUT.COLOR_AUG_CODE
         # fmt: on
         self.cfg = cfg
+        self.ocfg = to_omega_conf(cfg)
         self.split = split  # train | val | test
         if split == "train" and self.color_aug_prob > 0:
             self.color_augmentor = self._get_color_augmentor(aug_type=self.color_aug_type, aug_code=self.color_aug_code)
@@ -312,6 +314,7 @@ class GDRN_Online_DatasetFromList(Base_DatasetFromList):
     def read_data_train(self, dataset_dict):
         """load image and annos random shift & scale bbox; crop, rescale."""
         assert self.split == "train", self.split
+        ocfg = self.ocfg
         cfg = self.cfg
         net_cfg = cfg.MODEL.POSE_NET
         g_head_cfg = net_cfg.GEO_HEAD
@@ -478,7 +481,7 @@ class GDRN_Online_DatasetFromList(Base_DatasetFromList):
         else:
             raise ValueError
 
-        bbox_center, scale = self.aug_bbox_DZI(cfg, bbox_xyxy, im_H, im_W)
+        bbox_center, scale = self.aug_bbox_DZI(ocfg, bbox_xyxy, im_H, im_W)
         bw = max(bbox_xyxy[2] - bbox_xyxy[0], 1)
         bh = max(bbox_xyxy[3] - bbox_xyxy[1], 1)
 
@@ -488,7 +491,7 @@ class GDRN_Online_DatasetFromList(Base_DatasetFromList):
             image, bbox_center, scale, input_res, interpolation=cv2.INTER_LINEAR
         ).transpose(2, 0, 1)
 
-        roi_img = self.normalize_image(cfg, roi_img)
+        roi_img = self.normalize_image(ocfg, roi_img)
 
         # roi_depth --------------------------------------
         if self.with_depth:
