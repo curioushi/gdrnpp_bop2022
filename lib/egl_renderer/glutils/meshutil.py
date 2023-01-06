@@ -299,7 +299,6 @@ def load_mesh_pyassimp(
         normals = mesh.normals
     if sum(normals.shape) == 0:
         normals = calc_normals(vertices)
-    # import pdb; pdb.set_trace();
     result = dict(
         vertices=vertices,
         normals=normals,
@@ -404,7 +403,6 @@ def load_mesh_sixd(
     logger.info("loading {}".format(model_path))
     model = inout.load_ply(model_path)
     vertices = np.array(model["pts"]).astype(np.float32) * vertex_scale
-    # import pdb; pdb.set_trace();
     num_pts = vertices.shape[0]
     if recalculate_normals or "normals" not in model:
         normals = calc_normals(vertices)

@@ -196,7 +196,6 @@ if __name__ == "__main__":
     assert num_gpu <= torch.cuda.device_count(), f"num_gpu: {num_gpu} device count: {torch.cuda.device_count()}"
 
     dist_url = "auto" if args.dist_url is None else args.dist_url
-    # import ipdb; ipdb.set_trace()
     launch(
         main,
         num_gpu,

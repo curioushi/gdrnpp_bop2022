@@ -208,10 +208,7 @@ def ransac_voting_layer_v3(
         b = torch.sum(normal * torch.unsqueeze(coords, 0), 2)  # [vn,tn]
         ATA = torch.matmul(normal.permute(0, 2, 1), normal)  # [vn,2,2]
         ATb = torch.sum(normal * torch.unsqueeze(b, 2), 1)  # [vn,2]
-        # try:
         all_win_pts = torch.matmul(b_inv(ATA), torch.unsqueeze(ATb, 2))  # [vn,2,1]
-        # except:
-        #    __import__('ipdb').set_trace()
         batch_win_pts.append(all_win_pts[None, :, :, 0])
 
     batch_win_pts = torch.cat(batch_win_pts)

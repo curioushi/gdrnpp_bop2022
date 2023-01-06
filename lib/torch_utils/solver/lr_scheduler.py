@@ -331,7 +331,6 @@ def test_flat_and_anneal():
         # if global_step >= lr_config['warmup_iters']:
         #     scheduler.step(epoch)
         # print(type(scheduler.get_lr()[0]))
-        # import pdb;pdb.set_trace()
         epoch_lrs.append([epoch, scheduler.get_lr()[0]])  # only get the first lr (maybe a group of lrs)
         for batch in range(epoch_len):
             # if global_step < lr_config['warmup_iters']:
@@ -344,7 +343,6 @@ def test_flat_and_anneal():
             global_step += 1
             scheduler.step()  # usually after optimizer.step()
     # print(epoch_lrs)
-    # import pdb;pdb.set_trace()
     # epoch_lrs.append([total_epochs, scheduler.get_lr()[0]])
 
     epoch_lrs = np.asarray(epoch_lrs, dtype=np.float32)

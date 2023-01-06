@@ -224,7 +224,6 @@ class Base_DatasetFromList(Dataset):
 
         if self.preproc is not None:
             img, target = self.preproc(img, target, self.input_dim)
-        # import ipdb; ipdb.set_trace()
         return img, target, scene_im_id, img_info, img_id
 
     def _get_sample_dict(self, idx):

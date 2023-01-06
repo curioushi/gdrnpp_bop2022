@@ -223,7 +223,6 @@ def load_meshes(
         for model_path in tqdm(obj_files):
             assert osp.exists(model_path), model_path
             logger.info("loading {}".format(osp.normpath(model_path)))
-            # import ipdb;ipdb.set_trace()
             """
             a possible bug of not properly triangulation caused by libassimp-dev
             Ubuntu 16.04: libassimp-dev 3.2 is OK

@@ -94,7 +94,6 @@ if __name__ == "__main__":
         assert osp.exists(depth_tgt_path), "no {}".format(depth_tgt_path)
         v_depth_src[i, 0, :, :] = cv2.imread(depth_src_path, cv2.IMREAD_UNCHANGED) / DEPTH_FACTOR
         v_depth_tgt[i, 0, :, :] = cv2.imread(depth_tgt_path, cv2.IMREAD_UNCHANGED) / DEPTH_FACTOR
-        # import pdb; pdb.set_trace()
         v_pose_src[i] = pose_at_i(src_img_idx[i], gt_dict, cls_idx)
         v_pose_tgt[i] = pose_at_i(tgt_img_idx[i], gt_dict, cls_idx)
 

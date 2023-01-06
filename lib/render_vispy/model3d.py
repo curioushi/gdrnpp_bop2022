@@ -560,7 +560,6 @@ def load_models(
     # convert buffers to gloo buffers
     for model in tqdm(models):
         model.vertex_buffer = gloo.VertexBuffer(model.vertex_buffer)
-        # import ipdb; ipdb.set_trace()
         # NOTE: save index_buffer in list, load as uint32 np.array
         model.index_buffer = gloo.IndexBuffer(model.index_buffer)
         if model.bb_vbuffer is not None:
@@ -579,4 +578,3 @@ if __name__ == "__main__":
 
     data_ref = ref.__dict__[ref_key]
     models = load_models(data_ref.model_paths)
-    # import ipdb; ipdb.set_trace()

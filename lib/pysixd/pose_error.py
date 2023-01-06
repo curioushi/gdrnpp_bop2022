@@ -59,7 +59,6 @@ def vsd(
     # Render depth images of the model in the estimated and the ground-truth pose.
     fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
     if renderer_type in ["cpp", "python"]:
-        # import pdb; pdb.set_trace()
         depth_est = renderer.render_object(obj_id, R_est, t_est, fx, fy, cx, cy)["depth"]
         depth_gt = renderer.render_object(obj_id, R_gt, t_gt, fx, fy, cx, cy)["depth"]
     elif renderer_type == "egl":
@@ -79,7 +78,6 @@ def vsd(
         _, depth_gt = renderer.render(obj_id - 1, R_gt, t_gt, K=K)
     else:
         raise ValueError("renderer type: {} is not supported".format(renderer_type))
-    # import pdb; pdb.set_trace();
 
     # Convert depth images to distance images.
     dist_test = misc.depth_im_to_dist_im_fast(depth_test, K)

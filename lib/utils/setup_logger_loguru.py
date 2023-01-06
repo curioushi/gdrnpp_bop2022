@@ -47,7 +47,6 @@ def get_caller_name(depth=0):
     # the following logic is a little bit faster than inspect.stack() logic
     frame = inspect.currentframe().f_back
     # caller = inspect.getframeinfo(inspect.stack()[1][0])
-    # import ipdb; ipdb.set_trace()
     for _ in range(depth):
         if frame.f_back is not None:
             frame = frame.f_back

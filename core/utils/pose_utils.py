@@ -630,7 +630,6 @@ def T_transform_batch(T_src, T_delta, zoom_factor, labels_pred=None):
     vz = torch.div(T_src[:, 2], torch.exp(T_delta_selected[:, 2]))
     vx = vz * torch.addcdiv(vx_0, 1.0, T_src[:, 0], T_src[:, 2])
     vy = vz * torch.addcdiv(vy_0, 1.0, T_src[:, 1], T_src[:, 2])
-    # import pdb; pdb.set_trace()
 
     T_tgt = torch.stack([vx, vy, vz], 1)
     return T_tgt

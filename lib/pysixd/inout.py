@@ -319,7 +319,6 @@ def load_bop_results(path, version="bop19"):
                     elems = line.split(",")
                     if len(elems) != 7:
                         raise ValueError("A line does not have 7 comma-sep. elements: {}".format(line))
-                    # import pdb; pdb.set_trace();
                     result = {
                         "scene_id": int(elems[0]),
                         "im_id": int(elems[1]),

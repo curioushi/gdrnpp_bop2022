@@ -301,7 +301,6 @@ def test_softpool():
     print(x.shape)
     y = SoftPool(x, N_p)
     # y2 = SoftPoolv2(x, N_p)
-    # import ipdb; ipdb.set_trace()
     print("after softpool: ", y.shape)
     # print("diff: ", torch.max(y - y2), torch.mean(y - y2))
     conv8 = torch.nn.Conv2d(dim_pn, bottleneck_size, kernel_size=(1, dim_pn), stride=(1, 1)).to("cuda")

@@ -130,7 +130,6 @@ class Renderer(renderer.Renderer):
         if shading == "flat":
             ren_flags = ren_flags | RenderFlags.FLAT
         color, depth = self.r.render(self.scene, flags=ren_flags)  # depth: float
-        # import ipdb; ipdb.set_trace()
         if self.mode == "rgb":
             return {"rgb": color}
         elif self.mode == "depth":

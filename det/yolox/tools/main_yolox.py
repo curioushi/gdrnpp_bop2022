@@ -57,7 +57,6 @@ def main(args):
             logger.info("\tFusing conv bn...")
             model = fuse_model(model)
         res = Trainer.test(cfg, model)
-        # import ipdb; ipdb.set_trace()
         return res
     # train
     trainer = Trainer(cfg)

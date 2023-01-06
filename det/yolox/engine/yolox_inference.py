@@ -157,7 +157,6 @@ def yolox_inference_on_dataset(
                 infer_end_time = time_synchronized()
                 total_compute_time += infer_end_time - start_compute_time
 
-            # import ipdb; ipdb.set_trace()
             outputs["det_preds"] = postprocess(outputs["det_preds"], cfg.num_classes, cfg.conf_thr, cfg.nms_thr)
             if is_time_record:
                 nms_end_time = time_synchronized()

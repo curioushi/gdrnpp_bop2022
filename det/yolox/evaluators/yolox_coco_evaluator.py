@@ -382,7 +382,6 @@ class YOLOX_COCOEvaluator(DatasetEvaluator):
         self._logger.info(
             "Evaluating predictions with {} COCO API...".format("unofficial" if self._use_fast_impl else "official")
         )
-        # import ipdb; ipdb.set_trace()
         for task in sorted(tasks):
             assert task in {"bbox", "segm", "keypoints"}, f"Got unknown task: {task}!"
             coco_eval = (

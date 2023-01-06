@@ -105,7 +105,6 @@ class TLESS_PRIMESENSE_TRAIN_Dataset:
         for scene in tqdm(self.scenes):
             scene_id = int(scene)
             scene_root = osp.join(self.dataset_root, scene)
-            # import ipdb;ipdb.set_trace()
 
             gt_dict = mmcv.load(osp.join(scene_root, "scene_gt.json"))
             gt_info_dict = mmcv.load(osp.join(scene_root, "scene_gt_info.json"))
@@ -122,7 +121,6 @@ class TLESS_PRIMESENSE_TRAIN_Dataset:
 
                 K = np.array(cam_dict[str_im_id]["cam_K"], dtype=np.float32).reshape(3, 3)
                 depth_factor = 1000.0 / cam_dict[str_im_id]["depth_scale"]  # 10000
-                # import ipdb;ipdb.set_trace()
                 record = {
                     "dataset_name": self.name,
                     "file_name": osp.relpath(rgb_path, PROJ_ROOT),
