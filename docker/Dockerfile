@@ -81,6 +81,7 @@ RUN pip3 install vispy
 RUN pip3 install onnx onnxruntime
 RUN pip3 install fairscale
 RUN pip3 install ipdb
+RUN pip3 install timm
 
 # RUN pip3 install termcolor
 
