@@ -39,36 +39,20 @@ class CustomDataset(object):
         self.name = data_cfg["name"]
         self.data_cfg = data_cfg
 
-        self.objs = data_cfg["objs"]  # selected objects
-
-        self.dataset_root = data_cfg.get("dataset_root", osp.join(DATASETS_ROOT, "BOP_DATASETS/itodd/test"))
+        self.dataset_root = data_cfg.get("dataset_root")
         assert osp.exists(self.dataset_root), self.dataset_root
 
-        self.ann_file = data_cfg["ann_file"]  # json file with scene_id and im_id items
-
-        self.models_root = data_cfg["models_root"]  # BOP_DATASETS/itodd/models
-        self.scale_to_meter = data_cfg["scale_to_meter"]  # 0.001
+        self.models_root = os.path.join('models')
 
         self.with_masks = data_cfg["with_masks"]
         self.with_depth = data_cfg["with_depth"]
-
-        self.height = data_cfg["height"]  # 480
-        self.width = data_cfg["width"]  # 640
 
         self.cache_dir = data_cfg.get("cache_dir", osp.join(PROJ_ROOT, ".cache"))  # .cache
         self.use_cache = data_cfg.get("use_cache", True)
         self.num_to_load = data_cfg["num_to_load"]  # -1
         self.filter_invalid = data_cfg.get("filter_invalid", True)
-        ##################################################
 
-        # NOTE: careful! Only the selected objects
-        self.cat_ids = [cat_id for cat_id, obj_name in ref.itodd.id2obj.items() if obj_name in self.objs]
-        # map selected objs to [0, num_objs-1]
-        self.cat2label = {v: i for i, v in enumerate(self.cat_ids)}  # id_map
-        self.label2cat = {label: cat for cat, label in self.cat2label.items()}
-        self.obj2label = OrderedDict((obj, obj_id) for obj, obj_id in enumerate(self.objs))
-        ##########################################################
-
+    # TODO: rewrite this function
     def __call__(self):
         """Load light-weight instance annotations of all images into a list of
         dicts in Detectron2 format.
@@ -219,51 +203,19 @@ class CustomDataset(object):
         return self.width / self.height  # 4/3
 
 
-########### register datasets ############################################################
-
-
-def get_itodd_metadata(obj_names, ref_key):
-    """task specific metadata."""
-
-    data_ref = ref.__dict__[ref_key]
-
-    cur_sym_infos = {}  # label based key
-    loaded_models_info = data_ref.get_models_info()
-
-    for i, obj_name in enumerate(obj_names):
-        obj_id = data_ref.obj2id[obj_name]
-        model_info = loaded_models_info[str(obj_id)]
-        if "symmetries_discrete" in model_info or "symmetries_continuous" in model_info:
-            sym_transforms = misc.get_symmetry_transformations(model_info, max_sym_disc_step=0.01)
-            sym_info = np.array([sym["R"] for sym in sym_transforms], dtype=np.float32)
-        else:
-            sym_info = None
-        cur_sym_infos[i] = sym_info
-
-    meta = {"thing_classes": obj_names, "sym_infos": cur_sym_infos}
-    return meta
-
-
 ##########################################################################
 
 
 SPLITS_CUSTOM = dict(
     custom_train = dict(
-        name="itodd_bop_test",
-        dataset_root=osp.join(DATASETS_ROOT, "BOP_DATASETS/itodd/test"),
-        models_root=osp.join(DATASETS_ROOT, "BOP_DATASETS/itodd/models"),
-        objs=ref.itodd.objects,
-        ann_file=osp.join(DATASETS_ROOT, "BOP_DATASETS/itodd/test_targets_bop19.json"),
-        scale_to_meter=0.001,
+        name="custom_train",
+        dataset_root=osp.join(DATASETS_ROOT, "CUSTOM"),
         with_masks=True,  # (load masks but may not use it)
         with_depth=True,  # (load depth path here, but may not use it)
-        height=960,
-        width=1280,
         cache_dir=osp.join(PROJ_ROOT, ".cache"),
         use_cache=True,
         num_to_load=-1,
         filter_invalid=False,
-        ref_key="itodd",
     ),
 )
 
@@ -282,17 +234,12 @@ def register_with_name_cfg(name, data_cfg=None):
     else:
         assert data_cfg is not None, f"dataset name {name} is not registered"
         used_cfg = data_cfg
-    # TODO: rewrite Dataset class
-    import ipdb; ipdb.set_trace()
     DatasetCatalog.register(name, CustomDataset(used_cfg))
     # something like eval_types
     MetadataCatalog.get(name).set(
         id="custom",  # NOTE: for pvnet to determine module
-        ref_key=used_cfg["ref_key"],
-        objs=used_cfg["objs"],
         eval_error_types=["ad", "rete", "proj"],
         evaluator_type="bop",
-        **get_itodd_metadata(obj_names=used_cfg["objs"], ref_key=used_cfg["ref_key"]),
     )
 
 

@@ -10,6 +10,7 @@ if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
 else
     echo $PROJECT_DIR
     docker run -it \
+        --rm \
         --gpus '"device=0"' \
         --shm-size 8G \
         --user=$(id -u $USER):$(id -g $USER) \
