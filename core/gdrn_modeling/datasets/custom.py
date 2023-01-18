@@ -79,6 +79,8 @@ class CustomDataset(object):
         if osp.exists(cache_path) and self.use_cache:
             logger.info("load cached dataset dicts from {}".format(cache_path))
             return mmcv.load(cache_path)
+        else:
+            logger.info("cached dataset will be saved at {}".format(cache_path))
 
         t_start = time.perf_counter()
 
@@ -87,69 +89,126 @@ class CustomDataset(object):
         self.num_instances_without_valid_box = 0
         dataset_dicts = []  # ######################################################
         # it is slow because of loading and converting masks to rle
-        targets = mmcv.load(self.ann_file)
+        for scene in tqdm(self.scenes):
+            scene_id = int(scene)
+            scene_root = osp.join(self.dataset_root, scene)
 
-        scene_im_ids = [(item["scene_id"], item["im_id"]) for item in targets]
-        scene_im_ids = sorted(list(set(scene_im_ids)))
+            gt_dict = mmcv.load(osp.join(scene_root, "scene_gt.json"))
+            gt_info_dict = mmcv.load(osp.join(scene_root, "scene_gt_info.json"))
+            cam_dict = mmcv.load(osp.join(scene_root, "scene_camera.json"))
 
-        # load infos for each scene
-        # NOTE: currently no gt info available
-        # gt_dicts = {}
-        # gt_info_dicts = {}
-        cam_dicts = {}
-        for scene_id, im_id in scene_im_ids:
-            scene_root = osp.join(self.dataset_root, f"{scene_id:06d}")
-            # if scene_id not in gt_dicts:
-            #     gt_dicts[scene_id] = mmcv.load(osp.join(scene_root, "scene_gt.json"))
-            # if scene_id not in gt_info_dicts:
-            #     gt_info_dicts[scene_id] = mmcv.load(
-            #         osp.join(scene_root, "scene_gt_info.json")
-            #     )  # bbox_obj, bbox_visib
-            if scene_id not in cam_dicts:
-                cam_dicts[scene_id] = mmcv.load(osp.join(scene_root, "scene_camera.json"))
+            for str_im_id in tqdm(gt_dict, postfix=f"{scene_id}"):
+                int_im_id = int(str_im_id)
+                rgb_path = osp.join(scene_root, "rgb/{:06d}.jpg").format(int_im_id)
+                assert osp.exists(rgb_path), rgb_path
 
-        for scene_id, im_id in tqdm(scene_im_ids):
-            str_im_id = str(im_id)
-            scene_root = osp.join(self.dataset_root, f"{scene_id:06d}")
+                depth_path = osp.join(scene_root, "depth/{:06d}.png".format(int_im_id))
 
-            # gt_dict = gt_dicts[scene_id]
-            # gt_info_dict = gt_info_dicts[scene_id]
-            cam_dict = cam_dicts[scene_id]
+                scene_im_id = f"{scene_id}/{int_im_id}"
 
-            rgb_path = osp.join(scene_root, "gray/{:06d}.tif").format(im_id)
-            assert osp.exists(rgb_path), rgb_path
+                K = np.array(cam_dict[str_im_id]["cam_K"], dtype=np.float32).reshape(3, 3)
+                depth_factor = 1000.0 / cam_dict[str_im_id]["depth_scale"]  # 10000
 
-            depth_path = osp.join(scene_root, "depth/{:06d}.tif".format(im_id))
+                record = {
+                    "dataset_name": self.name,
+                    "file_name": osp.relpath(rgb_path, PROJ_ROOT),
+                    "depth_file": osp.relpath(depth_path, PROJ_ROOT),
+                    "height": self.height,
+                    "width": self.width,
+                    "image_id": int_im_id,
+                    "scene_im_id": scene_im_id,  # for evaluation
+                    "cam": K,
+                    "depth_factor": depth_factor,
+                    "img_type": "syn_pbr",  # NOTE: has background
+                }
+                insts = []
+                for anno_i, anno in enumerate(gt_dict[str_im_id]):
+                    obj_id = anno["obj_id"]
+                    if obj_id not in self.cat_ids:
+                        continue
+                    cur_label = self.cat2label[obj_id]  # 0-based label
+                    R = np.array(anno["cam_R_m2c"], dtype="float32").reshape(3, 3)
+                    t = np.array(anno["cam_t_m2c"], dtype="float32") / 1000.0
+                    pose = np.hstack([R, t.reshape(3, 1)])
+                    quat = mat2quat(R).astype("float32")
 
-            scene_im_id = f"{scene_id}/{im_id}"
+                    proj = (record["cam"] @ t.T).T
+                    proj = proj[:2] / proj[2]
 
-            K = np.array(cam_dict[str_im_id]["cam_K"], dtype=np.float32).reshape(3, 3)
-            depth_factor = 1000.0 / cam_dict[str_im_id]["depth_scale"]  # 10000
+                    bbox_visib = gt_info_dict[str_im_id][anno_i]["bbox_visib"]
+                    bbox_obj = gt_info_dict[str_im_id][anno_i]["bbox_obj"]
+                    x1, y1, w, h = bbox_visib
+                    if self.filter_invalid:
+                        if h <= 1 or w <= 1:
+                            self.num_instances_without_valid_box += 1
+                            continue
 
-            record = {
-                "dataset_name": self.name,
-                "file_name": osp.relpath(rgb_path, PROJ_ROOT),
-                "depth_file": osp.relpath(depth_path, PROJ_ROOT),
-                "height": self.height,
-                "width": self.width,
-                "image_id": im_id,
-                "scene_im_id": scene_im_id,  # for evaluation
-                "cam": K,
-                "depth_factor": depth_factor,
-                "img_type": "real",  # NOTE: has background
-            }
-            dataset_dicts.append(record)
+                    mask_file = osp.join(
+                        scene_root,
+                        "mask/{:06d}_{:06d}.png".format(int_im_id, anno_i),
+                    )
+                    mask_visib_file = osp.join(
+                        scene_root,
+                        "mask_visib/{:06d}_{:06d}.png".format(int_im_id, anno_i),
+                    )
+                    assert osp.exists(mask_file), mask_file
+                    assert osp.exists(mask_visib_file), mask_visib_file
+                    # load mask visib
+                    mask_single = mmcv.imread(mask_visib_file, "unchanged")
+                    mask_single = mask_single.astype("bool")
+                    area = mask_single.sum()
+                    if area < 30:  # filter out too small or nearly invisible instances
+                        self.num_instances_without_valid_segmentation += 1
+                        continue
+                    mask_rle = binary_mask_to_rle(mask_single, compressed=True)
+
+                    # load mask full
+                    mask_full = mmcv.imread(mask_file, "unchanged")
+                    mask_full = mask_full.astype("bool")
+                    mask_full_rle = binary_mask_to_rle(mask_full, compressed=True)
+
+                    visib_fract = gt_info_dict[str_im_id][anno_i].get("visib_fract", 1.0)
+
+                    xyz_path = osp.join(
+                        self.xyz_root,
+                        f"{scene_id:06d}/{int_im_id:06d}_{anno_i:06d}-xyz.pkl",
+                    )
+                    # assert osp.exists(xyz_path), xyz_path
+                    inst = {
+                        "category_id": cur_label,  # 0-based label
+                        "bbox": bbox_visib,
+                        "bbox_obj": bbox_obj,
+                        "bbox_mode": BoxMode.XYWH_ABS,
+                        "pose": pose,
+                        "quat": quat,
+                        "trans": t,
+                        "centroid_2d": proj,  # absolute (cx, cy)
+                        "segmentation": mask_rle,
+                        "mask_full": mask_full_rle,
+                        "visib_fract": visib_fract,
+                        "xyz_path": xyz_path,
+                    }
+
+                    model_info = self.models_info[str(obj_id)]
+                    inst["model_info"] = model_info
+                    for key in ["bbox3d_and_center"]:
+                        inst[key] = self.models[cur_label][key]
+                    insts.append(inst)
+                if len(insts) == 0:  # filter im without anno
+                    continue
+                record["annotations"] = insts
+                dataset_dicts.append(record)
 
         if self.num_instances_without_valid_segmentation > 0:
             logger.warning(
-                "There are {} instances without valid segmentation. "
+                "Filtered out {} instances without valid segmentation. "
                 "There might be issues in your dataset generation process.".format(
                     self.num_instances_without_valid_segmentation
                 )
             )
         if self.num_instances_without_valid_box > 0:
             logger.warning(
-                "There are {} instances without valid box. "
+                "Filtered out {} instances without valid box. "
                 "There might be issues in your dataset generation process.".format(self.num_instances_without_valid_box)
             )
         ##########################################################################
