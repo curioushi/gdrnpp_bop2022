@@ -607,6 +607,7 @@ def load_ply(path, vertex_scale=1.0):
         "float": ("f", 4),
         "double": ("d", 8),
         "int": ("i", 4),
+        "uint": ("I", 4),
         "uchar": ("B", 1),
     }
 

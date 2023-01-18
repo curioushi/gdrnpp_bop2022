@@ -271,7 +271,7 @@ def get_renderer(cfg, data_ref, obj_names, gpu_id=None):
     model_dir = data_ref.model_dir
 
     obj_ids = [data_ref.obj2id[_obj] for _obj in obj_names]
-    model_paths = [osp.join(model_dir, "obj_{:06d}.ply".format(obj_id)) for obj_id in obj_ids]
+    model_paths = [data_ref.model_paths[obj_id - 1] for obj_id in obj_ids]
 
     texture_paths = None
     if data_ref.texture_paths is not None:

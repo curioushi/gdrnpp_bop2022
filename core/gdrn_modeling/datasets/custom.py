@@ -38,6 +38,7 @@ class CustomDataset(object):
         """
         self.name = data_cfg["name"]
         self.data_cfg = data_cfg
+        self.objs = data_cfg['objs']
 
         self.dataset_root = data_cfg.get("dataset_root")
         assert osp.exists(self.dataset_root), self.dataset_root
@@ -209,13 +210,15 @@ class CustomDataset(object):
 SPLITS_CUSTOM = dict(
     custom_train = dict(
         name="custom_train",
-        dataset_root=osp.join(DATASETS_ROOT, "CUSTOM"),
+        objs=ref.custom.objects,
+        dataset_root=ref.custom.dataset_root,
         with_masks=True,  # (load masks but may not use it)
         with_depth=True,  # (load depth path here, but may not use it)
         cache_dir=osp.join(PROJ_ROOT, ".cache"),
         use_cache=True,
         num_to_load=-1,
         filter_invalid=False,
+        ref_key='custom',
     ),
 )
 
@@ -237,7 +240,9 @@ def register_with_name_cfg(name, data_cfg=None):
     DatasetCatalog.register(name, CustomDataset(used_cfg))
     # something like eval_types
     MetadataCatalog.get(name).set(
+        ref_key=used_cfg["ref_key"],
         id="custom",  # NOTE: for pvnet to determine module
+        objs=used_cfg['objs'],
         eval_error_types=["ad", "rete", "proj"],
         evaluator_type="bop",
     )
