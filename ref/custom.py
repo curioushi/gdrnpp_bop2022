@@ -2,6 +2,7 @@
 """This file includes necessary params, info."""
 import os.path as osp
 import mmcv
+import cv2
 import numpy as np
 import json
 from glob import glob
@@ -19,7 +20,7 @@ data_root = osp.join(root_dir, "datasets")
 # CUSTOM DATASET
 # ---------------------------------------------------------------- #
 dataset_root = osp.join(data_root, "CUSTOM/")
-test_dir = osp.join(dataset_root, "test")
+scene_dir = osp.join(dataset_root, "scenes")
 model_dir = osp.join(dataset_root, "models")
 # model_eval_dir = osp.join(dataset_root, "models_eval")
 vertex_scale = 0.001
@@ -71,17 +72,20 @@ texture_paths = None
 # )
 # 
 # Camera info
-camera_json = sorted(glob(osp.join(test_dir, '*', 'scene_cameras.json')))[0]
+camera_json = sorted(glob(osp.join(scene_dir, '*', 'scene_cameras.json')))[0]
 with open(camera_json, 'r') as f:
     camera_json = json.load(f)
 camera_info = camera_json[list(camera_json.keys())[0]]
-# width = 1280
-# height = 960
 zNear = 0.25
 zFar = 6.0
 camera_matrix = np.array([[camera_info['fx'], 0.0, camera_info['ppx']], [0.0, camera_info['fy'], camera_info['ppy']], [0, 0, 1]])
 del camera_json
 del camera_info
+
+img = cv2.imread(osp.join(scene_dir, '000000/color/000000.png'))
+width = img.shape[1]
+height = img.shape[0]
+del img
  
 # def get_models_info():
 #     """key is str(obj_id)"""

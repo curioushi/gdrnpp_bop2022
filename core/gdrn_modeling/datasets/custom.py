@@ -8,6 +8,7 @@ from collections import OrderedDict
 import mmcv
 import numpy as np
 from tqdm import tqdm
+from glob import glob
 from transforms3d.quaternions import mat2quat, quat2mat
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.structures import BoxMode
@@ -38,12 +39,15 @@ class CustomDataset(object):
         """
         self.name = data_cfg["name"]
         self.data_cfg = data_cfg
-        self.objs = data_cfg['objs']
+        self.objs = ref.custom.objects
+        self.width = ref.custom.width
+        self.height = ref.custom.height
 
-        self.dataset_root = data_cfg.get("dataset_root")
+        self.dataset_root = ref.custom.dataset_root
         assert osp.exists(self.dataset_root), self.dataset_root
 
-        self.models_root = os.path.join('models')
+        self.model_dir = ref.custom.model_dir
+        self.scene_dir = ref.custom.scene_dir
 
         self.with_masks = data_cfg["with_masks"]
         self.with_depth = data_cfg["with_depth"]
@@ -89,25 +93,28 @@ class CustomDataset(object):
         self.num_instances_without_valid_box = 0
         dataset_dicts = []  # ######################################################
         # it is slow because of loading and converting masks to rle
-        for scene in tqdm(self.scenes):
-            scene_id = int(scene)
-            scene_root = osp.join(self.dataset_root, scene)
+        scene_dirs = [x for x in sorted(glob(osp.join(self.scene_dir, '*'))) if osp.isdir(x)]
+        for scene_dir in tqdm(scene_dirs):
+            scene_id = scene_dir.split('/')[-1]
+            int_scene_id = int(scene_id)
 
-            gt_dict = mmcv.load(osp.join(scene_root, "scene_gt.json"))
-            gt_info_dict = mmcv.load(osp.join(scene_root, "scene_gt_info.json"))
-            cam_dict = mmcv.load(osp.join(scene_root, "scene_camera.json"))
+            scene_cameras = mmcv.load(osp.join(scene_dir, "scene_cameras.json"))
+            scene_objects = mmcv.load(osp.join(scene_dir, "scene_objects.json"))
+            annotations = mmcv.load(osp.join(scene_dir, "annotations.json"))
 
-            for str_im_id in tqdm(gt_dict, postfix=f"{scene_id}"):
-                int_im_id = int(str_im_id)
-                rgb_path = osp.join(scene_root, "rgb/{:06d}.jpg").format(int_im_id)
-                assert osp.exists(rgb_path), rgb_path
+            im_ids = sorted(scene_cameras.keys())
+            for im_id in tqdm(im_ids, postfix=f"{int_scene_id}"):
+                int_im_id = int(im_id)
+                rgb_path = osp.join(scene_dir, f"color/{scene_id}.png")
+                depth_path = osp.join(scene_dir, f"depth/{scene_id}.png")
+                assert osp.exists(rgb_path)
+                assert osp.exists(rgb_path)
 
-                depth_path = osp.join(scene_root, "depth/{:06d}.png".format(int_im_id))
+                scene_im_id = f"{int_scene_id}/{int_im_id}"
 
-                scene_im_id = f"{scene_id}/{int_im_id}"
-
-                K = np.array(cam_dict[str_im_id]["cam_K"], dtype=np.float32).reshape(3, 3)
-                depth_factor = 1000.0 / cam_dict[str_im_id]["depth_scale"]  # 10000
+                cam = scene_cameras[im_id]
+                K = np.array([cam['fx'], 0, cam['ppx'], 0, cam['fy'], cam['ppy'], 0, 0, 1], dtype=np.float32).reshape(3, 3)
+                depth_factor = 1000.0 / cam["depth_scale"]  # 10000
 
                 record = {
                     "dataset_name": self.name,
@@ -122,11 +129,15 @@ class CustomDataset(object):
                     "img_type": "syn_pbr",  # NOTE: has background
                 }
                 insts = []
-                for anno_i, anno in enumerate(gt_dict[str_im_id]):
-                    obj_id = anno["obj_id"]
-                    if obj_id not in self.cat_ids:
-                        continue
-                    cur_label = self.cat2label[obj_id]  # 0-based label
+                for anno_i, anno in enumerate(annotations[im_id]):
+                    # # TODO: support multiple object type
+                    # obj_id = anno["obj_id"]
+                    # if obj_id not in self.cat_ids:
+                    #     continue
+                    # cur_label = self.cat2label[obj_id]  # 0-based label
+                    cur_label = 0;
+
+                    import ipdb; ipdb.set_trace()
                     R = np.array(anno["cam_R_m2c"], dtype="float32").reshape(3, 3)
                     t = np.array(anno["cam_t_m2c"], dtype="float32") / 1000.0
                     pose = np.hstack([R, t.reshape(3, 1)])
@@ -144,11 +155,11 @@ class CustomDataset(object):
                             continue
 
                     mask_file = osp.join(
-                        scene_root,
+                        scene_dir,
                         "mask/{:06d}_{:06d}.png".format(int_im_id, anno_i),
                     )
                     mask_visib_file = osp.join(
-                        scene_root,
+                        scene_dir,
                         "mask_visib/{:06d}_{:06d}.png".format(int_im_id, anno_i),
                     )
                     assert osp.exists(mask_file), mask_file
@@ -224,7 +235,7 @@ class CustomDataset(object):
 
     @lazy_property
     def models_info(self):
-        models_info_path = osp.join(self.models_root, "models_info.json")
+        models_info_path = osp.join(self.model_dir, "models_info.json")
         assert osp.exists(models_info_path), models_info_path
         models_info = mmcv.load(models_info_path)  # key is str(obj_id)
         return models_info
@@ -241,7 +252,7 @@ class CustomDataset(object):
         for obj_name in self.objs:
             model = inout.load_ply(
                 osp.join(
-                    self.models_root,
+                    self.model_dir,
                     f"obj_{ref.itodd.obj2id[obj_name]:06d}.ply",
                 ),
                 vertex_scale=self.scale_to_meter,
@@ -269,15 +280,12 @@ class CustomDataset(object):
 SPLITS_CUSTOM = dict(
     custom_train = dict(
         name="custom_train",
-        objs=ref.custom.objects,
-        dataset_root=ref.custom.dataset_root,
         with_masks=True,  # (load masks but may not use it)
         with_depth=True,  # (load depth path here, but may not use it)
         cache_dir=osp.join(PROJ_ROOT, ".cache"),
         use_cache=True,
         num_to_load=-1,
         filter_invalid=False,
-        ref_key='custom',
     ),
 )
 
@@ -299,9 +307,9 @@ def register_with_name_cfg(name, data_cfg=None):
     DatasetCatalog.register(name, CustomDataset(used_cfg))
     # something like eval_types
     MetadataCatalog.get(name).set(
-        ref_key=used_cfg["ref_key"],
+        ref_key='custom',
         id="custom",  # NOTE: for pvnet to determine module
-        objs=used_cfg['objs'],
+        objs=ref.custom.objects,
         eval_error_types=["ad", "rete", "proj"],
         evaluator_type="bop",
     )
