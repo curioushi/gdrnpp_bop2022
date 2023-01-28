@@ -90,7 +90,7 @@ class ITODD_PBR_Dataset:
 
         if osp.exists(cache_path) and self.use_cache:
             logger.info("load cached dataset dicts from {}".format(cache_path))
-            return mmcv.load(cache_path)
+            # return mmcv.load(cache_path)
         else:
             logger.info("cached dataset will be saved at {}".format(cache_path))
 
@@ -133,6 +133,7 @@ class ITODD_PBR_Dataset:
                     "depth_factor": depth_factor,
                     "img_type": "syn_pbr",  # NOTE: has background
                 }
+                import ipdb; ipdb.set_trace()
                 insts = []
                 for anno_i, anno in enumerate(gt_dict[str_im_id]):
                     obj_id = anno["obj_id"]

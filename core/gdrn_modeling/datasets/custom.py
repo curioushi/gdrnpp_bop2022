@@ -99,7 +99,6 @@ class CustomDataset(object):
             int_scene_id = int(scene_id)
 
             scene_cameras = mmcv.load(osp.join(scene_dir, "scene_cameras.json"))
-            scene_objects = mmcv.load(osp.join(scene_dir, "scene_objects.json"))
             annotations = mmcv.load(osp.join(scene_dir, "annotations.json"))
 
             im_ids = sorted(scene_cameras.keys())
@@ -108,7 +107,7 @@ class CustomDataset(object):
                 rgb_path = osp.join(scene_dir, f"color/{scene_id}.png")
                 depth_path = osp.join(scene_dir, f"depth/{scene_id}.png")
                 assert osp.exists(rgb_path)
-                assert osp.exists(rgb_path)
+                assert osp.exists(depth_path)
 
                 scene_im_id = f"{int_scene_id}/{int_im_id}"
 
@@ -128,6 +127,7 @@ class CustomDataset(object):
                     "depth_factor": depth_factor,
                     "img_type": "syn_pbr",  # NOTE: has background
                 }
+                import ipdb; ipdb.set_trace()
                 insts = []
                 for anno_i, anno in enumerate(annotations[im_id]):
                     # # TODO: support multiple object type
@@ -137,7 +137,6 @@ class CustomDataset(object):
                     # cur_label = self.cat2label[obj_id]  # 0-based label
                     cur_label = 0;
 
-                    import ipdb; ipdb.set_trace()
                     R = np.array(anno["cam_R_m2c"], dtype="float32").reshape(3, 3)
                     t = np.array(anno["cam_t_m2c"], dtype="float32") / 1000.0
                     pose = np.hstack([R, t.reshape(3, 1)])
