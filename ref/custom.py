@@ -26,12 +26,13 @@ model_dir = osp.join(dataset_root, "models")
 vertex_scale = 0.001
 
 # object info
-objects = ['custom_obj']
-id2obj = {i: v for i, v in enumerate(objects, start=1)}
-obj2id = {_name: _id for _id, _name in id2obj.items()}
-obj_num = len(id2obj)
+objects = [str(i) for i in range(1, 1 + 1)]
+id2obj = {i: str(i) for i in range(1, 1 + 1)}
 
-model_paths = [osp.join(model_dir, "model_mm.ply")]
+obj_num = len(id2obj)
+obj2id = {_name: _id for _id, _name in id2obj.items()}
+
+model_paths = [osp.join(model_dir, "obj_{:06d}.ply").format(_id) for _id in id2obj]
 texture_paths = None
 # model_colors = [((i + 1) * 5, (i + 1) * 5, (i + 1) * 5) for i in range(obj_num)]  # for renderer
 # 
@@ -87,22 +88,22 @@ width = img.shape[1]
 height = img.shape[0]
 del img
  
-# def get_models_info():
-#     """key is str(obj_id)"""
-#     models_info_path = osp.join(model_dir, "models_info.json")
-#     assert osp.exists(models_info_path), models_info_path
-#     models_info = mmcv.load(models_info_path)  # key is str(obj_id)
-#     return models_info
-# 
-# 
-# # ref core/gdrn_modeling/tools/itodd/itodd_1_compute_fps.py
-# def get_fps_points():
-#     fps_points_path = osp.join(model_dir, "fps_points.pkl")
-#     assert osp.exists(fps_points_path), fps_points_path
-#     fps_dict = mmcv.load(fps_points_path)
-#     return fps_dict
-# 
-# 
+def get_models_info():
+    """key is str(obj_id)"""
+    models_info_path = osp.join(model_dir, "models_info.json")
+    assert osp.exists(models_info_path), models_info_path
+    models_info = mmcv.load(models_info_path)  # key is str(obj_id)
+    return models_info
+
+
+# ref core/gdrn_modeling/tools/itodd/itodd_1_compute_fps.py
+def get_fps_points():
+    fps_points_path = osp.join(model_dir, "fps_points.pkl")
+    assert osp.exists(fps_points_path), fps_points_path
+    fps_dict = mmcv.load(fps_points_path)
+    return fps_dict
+
+
 # # ref core/roi_pvnet/tools/itodd/itodd_1_compute_keypoints_3d.py
 # def get_keypoints_3d():
 #     keypoints_3d_path = osp.join(model_dir, "keypoints_3d.pkl")

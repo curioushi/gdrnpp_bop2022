@@ -55,6 +55,7 @@ class CustomDataset(object):
         self.cache_dir = data_cfg.get("cache_dir", osp.join(PROJ_ROOT, ".cache"))  # .cache
         self.use_cache = data_cfg.get("use_cache", True)
         self.num_to_load = data_cfg["num_to_load"]  # -1
+        self.scale_to_meter = data_cfg["scale_to_meter"]  # 0.001
         self.filter_invalid = data_cfg.get("filter_invalid", True)
 
     # TODO: rewrite this function
@@ -127,7 +128,6 @@ class CustomDataset(object):
                     "depth_factor": depth_factor,
                     "img_type": "syn_pbr",  # NOTE: has background
                 }
-                import ipdb; ipdb.set_trace()
                 insts = []
                 for anno_i, anno in enumerate(annotations[im_id]):
                     # # TODO: support multiple object type
@@ -135,18 +135,19 @@ class CustomDataset(object):
                     # if obj_id not in self.cat_ids:
                     #     continue
                     # cur_label = self.cat2label[obj_id]  # 0-based label
+                    obj_id = 1
                     cur_label = 0;
 
-                    R = np.array(anno["cam_R_m2c"], dtype="float32").reshape(3, 3)
-                    t = np.array(anno["cam_t_m2c"], dtype="float32") / 1000.0
-                    pose = np.hstack([R, t.reshape(3, 1)])
+                    pose = np.array(anno["tf_cam_obj"], dtype="float32")[:3]
+                    R = pose[:3, :3]
+                    t = pose[:3, 3]
                     quat = mat2quat(R).astype("float32")
 
                     proj = (record["cam"] @ t.T).T
                     proj = proj[:2] / proj[2]
 
-                    bbox_visib = gt_info_dict[str_im_id][anno_i]["bbox_visib"]
-                    bbox_obj = gt_info_dict[str_im_id][anno_i]["bbox_obj"]
+                    bbox_visib = anno["bbox_visib"]
+                    bbox_obj = anno["bbox_obj"]
                     x1, y1, w, h = bbox_visib
                     if self.filter_invalid:
                         if h <= 1 or w <= 1:
@@ -177,12 +178,12 @@ class CustomDataset(object):
                     mask_full = mask_full.astype("bool")
                     mask_full_rle = binary_mask_to_rle(mask_full, compressed=True)
 
-                    visib_fract = gt_info_dict[str_im_id][anno_i].get("visib_fract", 1.0)
+                    visib_fract = anno["visib_frac"]
 
-                    xyz_path = osp.join(
-                        self.xyz_root,
-                        f"{scene_id:06d}/{int_im_id:06d}_{anno_i:06d}-xyz.pkl",
-                    )
+                    # xyz_path = osp.join(
+                    #     self.xyz_root,
+                    #     f"{scene_id:06d}/{int_im_id:06d}_{anno_i:06d}-xyz.pkl",
+                    # )
                     # assert osp.exists(xyz_path), xyz_path
                     inst = {
                         "category_id": cur_label,  # 0-based label
@@ -196,7 +197,7 @@ class CustomDataset(object):
                         "segmentation": mask_rle,
                         "mask_full": mask_full_rle,
                         "visib_fract": visib_fract,
-                        "xyz_path": xyz_path,
+                        # "xyz_path": xyz_path,
                     }
 
                     model_info = self.models_info[str(obj_id)]
@@ -284,7 +285,8 @@ SPLITS_CUSTOM = dict(
         cache_dir=osp.join(PROJ_ROOT, ".cache"),
         use_cache=True,
         num_to_load=-1,
-        filter_invalid=False,
+        scale_to_meter=0.001,
+        filter_invalid=True,
     ),
 )
 
