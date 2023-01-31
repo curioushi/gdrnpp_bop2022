@@ -53,7 +53,7 @@ DATASETS = dict(
 
 DATALOADER = dict(
     # Number of data loading threads
-    NUM_WORKERS=0,
+    NUM_WORKERS=16,
     FILTER_VISIB_THR=0.3,
 )
 

@@ -105,8 +105,8 @@ class CustomDataset(object):
             im_ids = sorted(scene_cameras.keys())
             for im_id in tqdm(im_ids, postfix=f"{int_scene_id}"):
                 int_im_id = int(im_id)
-                rgb_path = osp.join(scene_dir, f"color/{scene_id}.png")
-                depth_path = osp.join(scene_dir, f"depth/{scene_id}.png")
+                rgb_path = osp.join(scene_dir, f"color/{im_id}.png")
+                depth_path = osp.join(scene_dir, f"depth/{im_id}.png")
                 assert osp.exists(rgb_path)
                 assert osp.exists(depth_path)
 
