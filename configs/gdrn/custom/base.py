@@ -49,6 +49,7 @@ SOLVER = dict(
 
 DATASETS = dict(
     TRAIN=("custom_train",),
+    TEST=("custom_train",),
 )
 
 DATALOADER = dict(
@@ -139,4 +140,4 @@ VAL = dict(
     SAVE_BOP_CSV_ONLY=True,  # NOTE: for itodd_test, no gt
 )
 
-TEST = dict(EVAL_PERIOD=0, VIS=False, TEST_BBOX_TYPE="est")  # gt | est
+TEST = dict(EVAL_PERIOD=0, VIS=False, TEST_BBOX_TYPE="gt")  # gt | est

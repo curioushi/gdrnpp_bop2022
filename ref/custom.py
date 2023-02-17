@@ -22,7 +22,7 @@ data_root = osp.join(root_dir, "datasets")
 dataset_root = osp.join(data_root, "CUSTOM/")
 scene_dir = osp.join(dataset_root, "scenes")
 model_dir = osp.join(dataset_root, "models")
-# model_eval_dir = osp.join(dataset_root, "models_eval")
+model_eval_dir = osp.join(dataset_root, "models")
 vertex_scale = 0.001
 
 # object info
